@@ -14,6 +14,7 @@ const mockConfig: MispConfig = {
   url: "https://misp.example.com",
   apiKey: "test-key",
   verifySsl: true,
+  timeout: 30000,
 };
 
 // Helper to extract the tool handler from McpServer registration

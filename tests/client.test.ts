@@ -6,6 +6,7 @@ const mockConfig: MispConfig = {
   url: "https://misp.example.com",
   apiKey: "test-api-key-12345",
   verifySsl: true,
+  timeout: 30000,
 };
 
 function mockFetch(response: unknown, status = 200) {

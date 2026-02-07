@@ -16,11 +16,13 @@ export class MispClient {
   private baseUrl: string;
   private apiKey: string;
   private verifySsl: boolean;
+  private timeout: number;
 
   constructor(config: MispConfig) {
     this.baseUrl = config.url;
     this.apiKey = config.apiKey;
     this.verifySsl = config.verifySsl;
+    this.timeout = config.timeout;
   }
 
   private async request<T>(
@@ -49,24 +51,27 @@ export class MispClient {
       "Content-Type": "application/json",
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
     const options: RequestInit & { dispatcher?: unknown } = {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     };
-
-    if (!this.verifySsl) {
-      // Node.js 20+ supports this via undici dispatcher or NODE_TLS_REJECT_UNAUTHORIZED
-      // For fetch, we rely on NODE_TLS_REJECT_UNAUTHORIZED=0 being set externally
-      // when verifySsl is false
-    }
 
     let response: Response;
     try {
       response = await fetch(url, options);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error(`MISP API timeout after ${this.timeout}ms`);
+      }
       const message = err instanceof Error ? err.message : String(err);
       throw new Error(`MISP API request failed: ${message}`);
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     const text = await response.text();

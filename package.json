@@ -21,6 +21,10 @@
     "type": "git",
     "url": "https://github.com/solomonneas/misp-mcp.git"
   },
+  "homepage": "https://github.com/solomonneas/misp-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/solomonneas/misp-mcp/issues"
+  },
   "keywords": [
     "mcp",
     "misp",

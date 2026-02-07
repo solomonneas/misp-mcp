@@ -2,6 +2,7 @@ export interface MispConfig {
   url: string;
   apiKey: string;
   verifySsl: boolean;
+  timeout: number;
 }
 
 export function getConfig(): MispConfig {
@@ -16,10 +17,12 @@ export function getConfig(): MispConfig {
   }
 
   const verifySsl = process.env.MISP_VERIFY_SSL !== "false";
+  const timeout = parseInt(process.env.MISP_TIMEOUT ?? "30", 10) * 1000;
 
   return {
     url: url.replace(/\/+$/, ""),
     apiKey,
     verifySsl,
+    timeout,
   };
 }
