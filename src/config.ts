@@ -1,8 +1,32 @@
+/** Maximum allowed MISP_TIMEOUT value in seconds (1 hour). */
+export const MISP_TIMEOUT_MAX_SECONDS = 3600;
+
+const MISP_TIMEOUT_DEFAULT_SECONDS = 30;
+
 export interface MispConfig {
   url: string;
   apiKey: string;
   verifySsl: boolean;
   timeout: number;
+}
+
+export function parseTimeoutSeconds(raw: string | undefined): number {
+  const value = raw ?? String(MISP_TIMEOUT_DEFAULT_SECONDS);
+
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new Error(
+      `MISP_TIMEOUT must be a positive integer between 1 and ${MISP_TIMEOUT_MAX_SECONDS} seconds (got ${JSON.stringify(raw ?? "")})`,
+    );
+  }
+
+  const seconds = Number(value);
+  if (seconds > MISP_TIMEOUT_MAX_SECONDS) {
+    throw new Error(
+      `MISP_TIMEOUT must be a positive integer between 1 and ${MISP_TIMEOUT_MAX_SECONDS} seconds (got ${seconds})`,
+    );
+  }
+
+  return seconds;
 }
 
 export function getConfig(): MispConfig {
@@ -17,7 +41,7 @@ export function getConfig(): MispConfig {
   }
 
   const verifySsl = process.env.MISP_VERIFY_SSL !== "false";
-  const timeout = parseInt(process.env.MISP_TIMEOUT ?? "30", 10) * 1000;
+  const timeout = parseTimeoutSeconds(process.env.MISP_TIMEOUT) * 1000;
 
   return {
     url: url.replace(/\/+$/, ""),
