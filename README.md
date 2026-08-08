@@ -24,12 +24,12 @@ misp-mcp is a [Model Context Protocol](https://modelcontextprotocol.io/) server 
 
 ## What it does
 
-misp-mcp connects an AI agent to a MISP (Malware Information Sharing Platform & Threat Intelligence Sharing) instance over MISP's REST API and exposes it as Model Context Protocol tools, resources, and prompts. Point it at your MISP server with an API key and an LLM can search threat-intelligence events, look up and add indicators of compromise (IOCs), correlate indicators across events, attach MITRE ATT&CK galaxy clusters, check warninglists for false positives, and export IOCs as Suricata, Snort, STIX, CSV, RPZ, or hash lists. Read paths are safe by default; state-changing and destructive operations are guarded behind explicit confirmation flags so an agent cannot delete an event or publish to sharing partners without approval.
+misp-mcp connects an AI agent to a MISP (Malware Information Sharing Platform & Threat Intelligence Sharing) instance over MISP's REST API and exposes it as Model Context Protocol tools, resources, and prompts. Point it at your MISP server with an API key and an LLM can search threat-intelligence events, look up and add indicators of compromise (IOCs), correlate indicators across events, attach MITRE ATT&CK galaxy clusters, check warninglists for false positives, and export IOCs as Suricata, Snort, STIX, CSV, RPZ, or hash lists. Read paths are safe by default. Destructive and publishing operations (delete, publish, untag) are gated behind explicit confirmation flags so an agent cannot delete an event or publish to sharing partners without approval. Other state-changing writes, including creating events, adding IOCs, attaching galaxy clusters, and toggling feeds, execute immediately when called.
 
 - **36 MCP tools** covering events, attributes, correlations, tags, exports, sightings, warninglists, objects, galaxies, feeds, organisations, and server administration.
 - **3 MCP resources** for browsing attribute types, instance statistics, and available taxonomies.
 - **3 MCP prompts** for guided IOC investigation, incident event creation, and threat reporting.
-- **Confirmation-gated writes** so destructive tools refuse to run without `confirm: true` (and `confirmHard: true` for permanent deletes).
+- **Confirmation-gated destructive actions:** delete, publish, and untag refuse to run without `confirm: true` (and `confirmHard: true` for permanent deletes); ordinary writes execute without confirmation.
 - **MITRE ATT&CK integration** via galaxy cluster search and attachment.
 - **Export formats** including CSV, STIX, Suricata, Snort, text, RPZ, and hash lists.
 - **SSL flexibility** for the self-signed certificates common in on-prem MISP deployments.
@@ -99,12 +99,31 @@ Claude Desktop reads this from `~/Library/Application Support/Claude/claude_desk
 
 ### Destructive action safety
 
-State-changing and destructive tools are guarded and refuse to run unless explicitly confirmed:
+Not every write requires confirmation. Read-only tools and most state-changing writes execute immediately when called. Only destructive or publishing actions are confirmation-gated.
 
-- `misp_delete_event`, `misp_delete_attribute`, `misp_delete_object`, `misp_publish_event`, and `misp_tag_event` (when `remove: true`) require `confirm: true`.
-- Setting `MISP_ALLOW_DESTRUCTIVE=true` pre-authorizes these so the `confirm` flag can be omitted (useful for trusted automation).
-- Permanent **hard** deletes (`hard: true` on `misp_delete_attribute` / `misp_delete_object`) require a **second** confirmation, `confirmHard: true`, in addition to `confirm: true`. The env opt-in does **not** bypass `confirmHard`.
-- Future destructive CLI commands use the same policy: `MISP_ALLOW_DESTRUCTIVE=true` plus `--confirm --destructive`, with `--confirm-hard` still required for permanent deletes.
+**Execute immediately (no `confirm` flag):**
+
+- Event writes: `misp_create_event`, `misp_update_event`
+- Attribute writes: `misp_add_attribute`, `misp_add_attributes_bulk`
+- Object writes: `misp_add_object`
+- Tag writes: `misp_tag_event` when adding a tag (`remove` is false or omitted)
+- Sightings: `misp_add_sighting`
+- Galaxies: `misp_attach_galaxy_cluster`
+- Feeds: `misp_toggle_feed`, `misp_fetch_feed`, `misp_cache_feed`
+
+**Require `confirm: true` (or `MISP_ALLOW_DESTRUCTIVE=true`):**
+
+- `misp_delete_event`
+- `misp_delete_attribute`
+- `misp_delete_object`
+- `misp_publish_event`
+- `misp_tag_event` when `remove: true`
+
+Setting `MISP_ALLOW_DESTRUCTIVE=true` pre-authorizes the gated actions above so the per-call `confirm` flag can be omitted (useful for trusted automation).
+
+Permanent **hard** deletes (`hard: true` on `misp_delete_attribute` / `misp_delete_object`) require a **second** confirmation, `confirmHard: true`, in addition to `confirm: true`. The env opt-in does **not** bypass `confirmHard`.
+
+Future destructive CLI commands use the same policy: `MISP_ALLOW_DESTRUCTIVE=true` plus `--confirm --destructive`, with `--confirm-hard` still required for permanent deletes.
 
 A guarded call returns an error (`isError: true`) with a `Refused:` message and performs no MISP request.
 
