@@ -94,7 +94,7 @@ Claude Desktop reads this from `~/Library/Application Support/Claude/claude_desk
 | `MISP_URL` | Yes | - | MISP instance base URL |
 | `MISP_API_KEY` | Yes | - | API authentication key |
 | `MISP_VERIFY_SSL` | No | `true` | Set `false` for self-signed certs |
-| `MISP_TIMEOUT` | No | `30` | Request timeout in seconds |
+| `MISP_TIMEOUT` | No | `30` | Request timeout in seconds (positive integer, 1–3600) |
 | `MISP_ALLOW_DESTRUCTIVE` | No | `false` | Set `true` to pre-authorize destructive tools so the per-call `confirm` flag is not required. Permanent (`hard`) deletes still require `confirmHard`. |
 
 ### Destructive action safety
